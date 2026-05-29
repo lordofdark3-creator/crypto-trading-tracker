@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AlphaTerminal | Performance Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;family=Geist:wght@600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#b0c6ff",
+                        "secondary": "#ffb3b3",
+                        "surface-container-high": "#272a2e",
+                        "surface-dim": "#111417",
+                        "primary-fixed-dim": "#3ce36a",
+                        "on-tertiary-fixed": "#001945",
+                        "on-background": "#e1e2e7",
+                        "surface-tint": "#3ce36a",
+                        "surface-container-highest": "#323538",
+                        "surface-variant": "#323538",
+                        "primary-fixed": "#69ff87",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "inverse-primary": "#006e2a",
+                        "secondary-fixed": "#ffdad9",
+                        "background": "#111417",
+                        "on-tertiary-fixed-variant": "#00429b",
+                        "surface-container": "#1d2023",
+                        "tertiary-fixed": "#d9e2ff",
+                        "on-primary-container": "#004c1b",
+                        "on-surface-variant": "#bbcbb8",
+                        "on-primary-fixed-variant": "#00531e",
+                        "surface-bright": "#37393d",
+                        "on-secondary-container": "#5b0011",
+                        "on-secondary": "#680014",
+                        "surface": "#111417",
+                        "on-tertiary-container": "#003d90",
+                        "error": "#ffb4ab",
+                        "surface-container-low": "#191c1f",
+                        "on-tertiary": "#002d6e",
+                        "on-secondary-fixed-variant": "#920021",
+                        "tertiary": "#b4c8ff",
+                        "outline": "#869583",
+                        "outline-variant": "#3c4a3c",
+                        "primary-container": "#00c853",
+                        "primary": "#3fe56c",
+                        "inverse-surface": "#e1e2e7",
+                        "surface-container-lowest": "#0b0e11",
+                        "on-primary-fixed": "#002108",
+                        "inverse-on-surface": "#2e3134",
+                        "secondary-fixed-dim": "#ffb3b3",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed": "#400009",
+                        "on-primary": "#003912",
+                        "tertiary-container": "#89acff",
+                        "secondary-container": "#ff525f",
+                        "on-surface": "#e1e2e7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "element-gap-wide": "16px",
+                        "unit": "4px",
+                        "grid-gutter": "16px",
+                        "element-gap-tight": "8px",
+                        "container-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "stat-lg": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "stat-sm": ["JetBrains Mono"],
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "stat-lg": ["20px", {"lineHeight": "1", "letterSpacing": "-0.01em", "fontWeight": "500"}],
+                        "body-sm": ["13px", {"lineHeight": "1.4", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "stat-sm": ["12px", {"lineHeight": "1", "fontWeight": "400"}],
+                        "label-caps": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #0b0e11;
+            color: #e1e2e7;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #111417; }
+        ::-webkit-scrollbar-thumb { background: #2c3035; border-radius: 10px; }
+
+        .trading-view-grid {
+            background-image: linear-gradient(#1d2023 1px, transparent 1px), linear-gradient(90deg, #1d2023 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+    </style>
+</head>
+<body class="overflow-x-hidden font-body-lg">
+<!-- Top Navigation -->
+<header class="fixed top-0 z-50 flex justify-between items-center w-full px-grid-gutter h-16 bg-surface-container-lowest border-b border-outline-variant">
+<div class="flex items-center gap-element-gap-wide">
+<span class="text-headline-md font-headline-md font-bold tracking-tight text-primary">AlphaTerminal</span>
+<nav class="hidden md:flex ml-8 space-x-6">
+<a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">Dashboard</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">Portfolio</a>
+<a class="text-primary border-b-2 border-primary font-bold pb-1" href="#">Analytics</a>
+<a class="text-on-surface-variant hover:text-on-surface transition-colors" href="#">Terminal</a>
+</nav>
+</div>
+<div class="flex items-center gap-element-gap-tight">
+<div class="relative group mr-4">
+<button class="flex items-center gap-2 px-3 py-1.5 bg-surface-container rounded-lg border border-outline-variant text-body-sm">
+<span>Weekly</span>
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+</button>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container-high rounded-full transition-all">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container-high rounded-full transition-all">settings</button>
+<button class="ml-4 px-4 py-2 bg-primary text-on-primary font-bold text-body-sm rounded hover:opacity-80 active:scale-95 transition-all">Connect Wallet</button>
+</div>
+</header>
+<!-- Sidebar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container-low border-r border-outline-variant hidden md:flex flex-col py-element-gap-wide space-y-unit">
+<div class="px-6 py-4 mb-4">
+<div class="flex items-center gap-3">
+<img alt="Trader Profile" class="w-10 h-10 rounded-full border border-primary-fixed-dim" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCnySXgTwMj5ZrHi5XzVzlxtj_dG_HO11faujY8KiJwMTfGWvjREeBPGcAn2u8MWoVaAf1R2ERSLXmiqoYs1bfMWafmj0T6s7AMJbxUojNQ5GgO9cJtvonHTr9QUNTysh0ZNHyaoB8A5ADpcYl5bWX4ILfSALs8dEW0qc-UkO9VvO9SdqvTwjiTRsjZWsCLtlLA0s4tmbShNzI-pEZgPqeaNXmByST6nEpij2WP99infj2MNw3YD5aWzCPou7bsIuYiOf8CD4bJj4hx"/>
+<div>
+<p class="text-body-sm font-bold text-on-surface">Main Portfolio</p>
+<p class="text-label-caps text-on-surface-variant">Pro Account</p>
+</div>
+</div>
+</div>
+<div class="flex-1 px-3 space-y-1">
+<div class="bg-surface-container-highest text-primary-fixed-dim border-l-4 border-primary-fixed-dim flex items-center gap-3 px-4 py-3 cursor-pointer translate-x-1 transition-transform">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">insights</span>
+<span class="text-label-caps font-label-caps">Performance</span>
+</div>
+<div class="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface flex items-center gap-3 px-4 py-3 cursor-pointer transition-all">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="text-label-caps font-label-caps">Positions</span>
+</div>
+<div class="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface flex items-center gap-3 px-4 py-3 cursor-pointer transition-all">
+<span class="material-symbols-outlined">history</span>
+<span class="text-label-caps font-label-caps">History</span>
+</div>
+<div class="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface flex items-center gap-3 px-4 py-3 cursor-pointer transition-all">
+<span class="material-symbols-outlined">emoji_events</span>
+<span class="text-label-caps font-label-caps">Leaderboard</span>
+</div>
+<div class="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface flex items-center gap-3 px-4 py-3 cursor-pointer transition-all">
+<span class="material-symbols-outlined">description</span>
+<span class="text-label-caps font-label-caps">Journal</span>
+</div>
+</div>
+<div class="px-4 py-6 border-t border-outline-variant space-y-1">
+<div class="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface flex items-center gap-3 px-4 py-2 cursor-pointer transition-all">
+<span class="material-symbols-outlined">help_outline</span>
+<span class="text-body-sm">Help</span>
+</div>
+<div class="text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface flex items-center gap-3 px-4 py-2 cursor-pointer transition-all">
+<span class="material-symbols-outlined">logout</span>
+<span class="text-body-sm">Logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-0 md:ml-64 mt-16 p-grid-gutter min-h-screen">
+<!-- Header & Top Stats -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-grid-gutter mb-grid-gutter">
+<!-- Total P/L -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 opacity-10">
+<span class="material-symbols-outlined text-[80px]" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<h3 class="text-label-caps text-on-surface-variant mb-2">Total Profit / Loss</h3>
+<div class="flex items-baseline gap-2">
+<span class="text-headline-md font-stat-lg text-primary">+$12,450.82</span>
+<span class="text-label-caps text-primary bg-primary/10 px-1.5 py-0.5 rounded">+14.2%</span>
+</div>
+<div class="mt-4 h-1 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 72%"></div>
+</div>
+</div>
+<!-- Win Rate -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide relative overflow-hidden">
+<h3 class="text-label-caps text-on-surface-variant mb-2">Win vs Loss Rate</h3>
+<div class="flex justify-between items-center mb-1">
+<span class="text-stat-lg font-stat-lg text-on-surface">68.5%</span>
+<span class="text-stat-sm font-stat-sm text-on-surface-variant">42 Trades</span>
+</div>
+<div class="flex h-2 w-full gap-1">
+<div class="h-full bg-primary rounded-l-full" style="width: 68.5%"></div>
+<div class="h-full bg-secondary-container rounded-r-full" style="width: 31.5%"></div>
+</div>
+<div class="flex justify-between mt-2 text-stat-sm font-stat-sm">
+<span class="text-primary">28 Wins</span>
+<span class="text-secondary-container">14 Losses</span>
+</div>
+</div>
+<!-- Total Volume -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide">
+<h3 class="text-label-caps text-on-surface-variant mb-2">Total Volume</h3>
+<p class="text-stat-lg font-stat-lg text-on-surface">$1.24M</p>
+<div class="flex items-center gap-1 mt-2 text-stat-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+<span>High frequency session</span>
+</div>
+</div>
+<!-- Avg Earning -->
+<div class="bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide">
+<h3 class="text-label-caps text-on-surface-variant mb-2">Avg. Profit / Trade</h3>
+<p class="text-stat-lg font-stat-lg text-on-surface">$296.44</p>
+<p class="text-stat-sm font-stat-sm text-on-surface-variant mt-2">Adjusted for slippage</p>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-grid-gutter">
+<!-- Main Chart Area -->
+<div class="lg:col-span-8 bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide">
+<div class="flex justify-between items-center mb-6">
+<div>
+<h2 class="text-headline-md font-headline-md text-on-surface">Cumulative Performance</h2>
+<p class="text-body-sm text-on-surface-variant">Profit growth tracking (Daily Aggregation)</p>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1 text-label-caps bg-surface-container-highest border border-outline-variant rounded text-on-surface">Line</button>
+<button class="px-3 py-1 text-label-caps text-on-surface-variant hover:bg-surface-container-high transition-all">Area</button>
+</div>
+</div>
+<!-- Chart -->
+<div class="h-[400px] w-full trading-view-grid relative border border-outline-variant/30 rounded flex items-end px-4 pb-8 overflow-hidden">
+<svg class="w-full h-full preserve-3d" preserveAspectRatio="none" viewBox="0 0 1000 400">
+<defs>
+<linearGradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#3ce36a" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#3ce36a" stop-opacity="0"></stop>
+</linearGradient>
+</defs>
+<path d="M0,350 Q100,320 200,340 T400,280 T600,220 T800,120 T1000,50 L1000,400 L0,400 Z" fill="url(#chartGradient)"></path>
+<path d="M0,350 Q100,320 200,340 T400,280 T600,220 T800,120 T1000,50" fill="none" stroke="#3ce36a" stroke-width="3"></path>
+<circle cx="800" cy="120" fill="#3ce36a" r="4"></circle>
+<circle class="animate-pulse" cx="800" cy="120" fill="#3ce36a" fill-opacity="0.2" r="10"></circle>
+</svg>
+<div class="absolute bottom-2 left-0 right-0 flex justify-between px-4 text-stat-sm text-on-surface-variant">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+</div>
+</div>
+<!-- Trade Entry Card -->
+<div class="lg:col-span-4 bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide shadow-xl">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+<h2 class="text-headline-md font-headline-md text-on-surface">Log Position</h2>
+</div>
+<form class="space-y-4">
+<div>
+<label class="text-label-caps text-on-surface-variant block mb-1">Asset Pair</label>
+<select class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-body-lg focus:border-primary focus:ring-0 outline-none appearance-none">
+<option>BTC/USDT</option>
+<option>ETH/USDT</option>
+<option>SOL/USDT</option>
+<option>BNB/USDT</option>
+<option>XRP/USDT</option>
+<option>ADA/USDT</option>
+<option>AVAX/USDT</option>
+<option>DOGE/USDT</option>
+<option>DOT/USDT</option>
+<option>MATIC/USDT</option>
+<option>LINK/USDT</option>
+<option>TRX/USDT</option>
+<option>LTC/USDT</option>
+<option>BCH/USDT</option>
+<option>SHIB/USDT</option>
+</select>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<button class="py-2.5 rounded font-bold text-label-caps bg-primary text-on-primary" type="button">LONG</button>
+<button class="py-2.5 rounded font-bold text-label-caps border border-outline-variant text-on-surface-variant hover:bg-secondary-container/20" type="button">SHORT</button>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="text-label-caps text-on-surface-variant block mb-1">Entry Price</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-stat-sm focus:border-primary focus:ring-0 outline-none" placeholder="0.00" type="text"/>
+</div>
+<div>
+<label class="text-label-caps text-on-surface-variant block mb-1">Exit Price</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-stat-sm focus:border-primary focus:ring-0 outline-none" placeholder="0.00" type="text"/>
+</div>
+</div>
+<div>
+<label class="text-label-caps text-on-surface-variant block mb-1">Amount (Position Size)</label>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-stat-sm focus:border-primary focus:ring-0 outline-none" placeholder="0.00 USDT" type="text"/>
+</div>
+<div>
+<label class="text-label-caps text-on-surface-variant block mb-1 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">description</span> Trade Journal Notes
+</label>
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant rounded p-3 text-body-sm focus:border-primary focus:ring-0 outline-none h-24 resize-none" placeholder="Record your trade thesis, emotional state, or market conditions..."></textarea>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded border border-outline-variant border-dashed">
+<div class="flex justify-between items-center">
+<span class="text-label-caps text-on-surface-variant">Estimated P/L</span>
+<span class="text-stat-lg font-stat-lg text-primary" id="est-pl">+$0.00</span>
+</div>
+</div>
+<button class="w-full bg-primary py-4 rounded font-bold text-on-primary hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+  Commit to Journal
+</button>
+</form>
+</div>
+<!-- Recent Journal Entries -->
+<div class="mt-grid-gutter bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">history_edu</span>
+<h3 class="text-body-lg font-bold text-on-surface">Recent Journal Entries</h3>
+</div>
+<div class="space-y-3">
+<div class="p-3 bg-surface-container-low rounded border border-outline-variant">
+<div class="flex justify-between mb-1">
+<span class="text-label-caps text-primary">BTC LONG</span>
+<span class="text-label-caps text-on-surface-variant">Oct 24</span>
+</div>
+<p class="text-body-sm text-on-surface-variant italic leading-tight">"Entering on RSI divergence on 4H. Stop loss at 62.5k..."</p>
+</div>
+<div class="p-3 bg-surface-container-low rounded border border-outline-variant">
+<div class="flex justify-between mb-1">
+<span class="text-label-caps text-secondary-container">ETH SHORT</span>
+<span class="text-label-caps text-on-surface-variant">Oct 24</span>
+</div>
+<p class="text-body-sm text-on-surface-variant italic leading-tight">"Failed to break resistance at 2.6k. Macro outlook bearish..."</p>
+</div>
+</div>
+<button class="w-full mt-4 py-2 text-label-caps text-on-surface-variant hover:text-on-surface transition-colors">
+  View All Journal Entries
+</button>
+</div>
+</div>
+<!-- Asset Performance Breakdown -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-grid-gutter mb-grid-gutter mt-grid-gutter">
+<div class="md:col-span-3 bg-surface-container border border-outline-variant rounded-lg p-element-gap-wide">
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-headline-md font-headline-md text-on-surface">Asset Performance Breakdown</h2>
+<div class="text-label-caps text-on-surface-variant">By P/L &amp; Win Rate</div>
+</div>
+<div class="space-y-4">
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-body-sm">
+<span class="font-bold">BTC/USDT</span>
+<span class="text-primary">+$8,420.50 (72% WR)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 72%"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-body-sm">
+<span class="font-bold">ETH/USDT</span>
+<span class="text-primary">+$2,140.20 (64% WR)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 64%"></div>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<div class="flex justify-between text-body-sm">
+<span class="font-bold">SOL/USDT</span>
+<span class="text-secondary-container">-$450.00 (48% WR)</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary-container" style="width: 48%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Trade History Table -->
+<div class="mt-grid-gutter bg-surface-container border border-outline-variant rounded-lg overflow-hidden">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center">
+<h2 class="text-headline-md font-headline-md text-on-surface">Trade History</h2>
+<div class="flex gap-4">
+<div class="relative">
+<input class="bg-surface-container-lowest border border-outline-variant rounded-full px-10 py-1.5 text-body-sm focus:border-primary outline-none" placeholder="Search pairs..." type="text"/>
+<span class="material-symbols-outlined absolute left-3 top-2 text-on-surface-variant text-[18px]">search</span>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container-high rounded transition-all">filter_list</button>
+<button class="material-symbols-outlined text-on-surface-variant p-2 hover:bg-surface-container-high rounded transition-all">download</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-label-caps text-on-surface-variant">
+<th class="px-6 py-4 font-bold">Pair</th>
+<th class="px-6 py-4 font-bold">Date / Time</th>
+<th class="px-6 py-4 font-bold">Type</th>
+<th class="px-6 py-4 font-bold">Entry</th>
+<th class="px-6 py-4 font-bold">Exit</th>
+<th class="px-6 py-4 font-bold text-right">P/L ($)</th>
+<th class="px-6 py-4 font-bold text-right">P/L (%)</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer">
+<td class="px-6 py-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="text-body-sm font-bold text-on-surface">BTC/USDT</span>
+</div>
+</td>
+<td class="px-6 py-3 text-body-sm text-on-surface-variant">Oct 24, 14:22:10</td>
+<td class="px-6 py-3"><span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-label-caps">LONG</span></td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">63,450.20</td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">65,120.00</td>
+<td class="px-6 py-3 text-right font-stat-sm text-primary">+$1,669.80</td>
+<td class="px-6 py-3 text-right font-stat-sm text-primary">+2.63%</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer">
+<td class="px-6 py-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<span class="text-body-sm font-bold text-on-surface">ETH/USDT</span>
+</div>
+</td>
+<td class="px-6 py-3 text-body-sm text-on-surface-variant">Oct 24, 11:05:44</td>
+<td class="px-6 py-3"><span class="bg-secondary-container/10 text-secondary-container px-2 py-0.5 rounded text-label-caps">SHORT</span></td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">2,544.10</td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">2,580.30</td>
+<td class="px-6 py-3 text-right font-stat-sm text-secondary-container">-$36.20</td>
+<td class="px-6 py-3 text-right font-stat-sm text-secondary-container">-1.42%</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer">
+<td class="px-6 py-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="text-body-sm font-bold text-on-surface">SOL/USDT</span>
+</div>
+</td>
+<td class="px-6 py-3 text-body-sm text-on-surface-variant">Oct 23, 22:45:12</td>
+<td class="px-6 py-3"><span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-label-caps">LONG</span></td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">142.50</td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">155.20</td>
+<td class="px-6 py-3 text-right font-stat-sm text-primary">+$852.00</td>
+<td class="px-6 py-3 text-right font-stat-sm text-primary">+8.91%</td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors cursor-pointer">
+<td class="px-6 py-3">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<span class="text-body-sm font-bold text-on-surface">MATIC/USDT</span>
+</div>
+</td>
+<td class="px-6 py-3 text-body-sm text-on-surface-variant">Oct 23, 16:10:05</td>
+<td class="px-6 py-3"><span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-label-caps">LONG</span></td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">0.5210</td>
+<td class="px-6 py-3 text-stat-sm text-on-surface">0.5355</td>
+<td class="px-6 py-3 text-right font-stat-sm text-primary">+$435.10</td>
+<td class="px-6 py-3 text-right font-stat-sm text-primary">+2.78%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-outline-variant flex justify-between items-center text-body-sm">
+<span class="text-on-surface-variant">Showing 4 of 42 trades</span>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-surface-container-high rounded text-on-surface-variant disabled:opacity-50" disabled="">Previous</button>
+<button class="px-3 py-1 bg-surface-container-high rounded text-on-surface">Next</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-8 right-8 w-14 h-14 bg-primary text-on-primary-fixed rounded-full shadow-2xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all z-50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+<script>
+        // Chart hover interaction
+        const chartPaths = document.querySelectorAll('path');
+        chartPaths.forEach(path => {
+            path.addEventListener('mouseenter', () => { path.style.strokeWidth = '4'; });
+            path.addEventListener('mouseleave', () => { path.style.strokeWidth = '3'; });
+        });
+
+        // Long/Short toggle
+        const tradeTypeButtons = document.querySelectorAll('form button[type="button"]');
+        tradeTypeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tradeTypeButtons.forEach(b => {
+                    b.classList.remove('bg-primary', 'text-on-primary', 'bg-secondary-container', 'text-on-secondary-container');
+                    b.classList.add('border', 'border-outline-variant', 'text-on-surface-variant');
+                });
+                if (btn.innerText === 'LONG') {
+                    btn.classList.remove('border', 'border-outline-variant', 'text-on-surface-variant');
+                    btn.classList.add('bg-primary', 'text-on-primary');
+                } else {
+                    btn.classList.remove('border', 'border-outline-variant', 'text-on-surface-variant');
+                    btn.classList.add('bg-secondary-container', 'text-on-secondary-container');
+                }
+            });
+        });
+
+        // Live P/L calculator
+        const entryInput = document.querySelector('input[placeholder="0.00"]:first-of-type') ||
+            [...document.querySelectorAll('input')].find(i => i.placeholder === '0.00');
+        const exitInput = [...document.querySelectorAll('input')].filter(i => i.placeholder === '0.00')[1];
+        const sizeInput = document.querySelector('input[placeholder="0.00 USDT"]');
+        const plDisplay = document.getElementById('est-pl');
+
+        function calcPL() {
+            const entry = parseFloat(entryInput?.value) || 0;
+            const exit = parseFloat(exitInput?.value) || 0;
+            const size = parseFloat(sizeInput?.value) || 0;
+            if (entry && exit && size) {
+                const activeLong = [...tradeTypeButtons].find(b => b.classList.contains('bg-primary'));
+                const isLong = !activeLong || activeLong.innerText === 'LONG';
+                const pl = isLong ? ((exit - entry) / entry) * size : ((entry - exit) / entry) * size;
+                plDisplay.textContent = (pl >= 0 ? '+' : '') + '$' + pl.toFixed(2);
+                plDisplay.className = pl >= 0
+                    ? 'text-stat-lg font-stat-lg text-primary'
+                    : 'text-stat-lg font-stat-lg text-secondary-container';
+            }
+        }
+
+        [entryInput, exitInput, sizeInput].forEach(el => el?.addEventListener('input', calcPL));
+    </script>
+</body></html>
