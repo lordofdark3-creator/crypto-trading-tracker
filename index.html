@@ -63,6 +63,11 @@
   .nav-link { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; color: #bbcbb8; border-left: 3px solid transparent; transition: all .15s; }
   .nav-link:hover { background: #272a2e; color: #e1e2e7; }
   .nav-link.active { color: #3ce36a; background: #323538; border-left-color: #3fe56c; }
+  .period-btn { padding: 5px 13px; font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; background: transparent; color: #bbcbb8; border: none; cursor: pointer; transition: all .15s; white-space: nowrap; }
+  .period-btn:hover { background: #272a2e; color: #e1e2e7; }
+  .period-btn.on { background: #272a2e; color: #3fe56c; }
+  .period-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #191c1f; }
+  .period-row:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -149,17 +154,27 @@
 
     <!-- Chart -->
     <div class="card" style="margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
         <div>
           <div style="font-family:Geist,sans-serif;font-size:16px;font-weight:600;">Cumulative P/L</div>
-          <div style="font-size:12px;color:#bbcbb8;margin-top:2px;">Running profit across all trades</div>
+          <div style="font-size:12px;color:#bbcbb8;margin-top:2px;" id="chart-subtitle">Running profit across all trades</div>
         </div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;" id="chart-total"></div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="mono" style="font-size:13px;" id="chart-total"></div>
+          <div style="display:flex;border:1px solid #3c4a3c;border-radius:4px;overflow:hidden;">
+            <button class="period-btn on" id="pb-all"   onclick="setPeriod('all')">All</button>
+            <button class="period-btn"    id="pb-day"   onclick="setPeriod('day')">Day</button>
+            <button class="period-btn"    id="pb-week"  onclick="setPeriod('week')">Week</button>
+            <button class="period-btn"    id="pb-month" onclick="setPeriod('month')">Month</button>
+          </div>
+        </div>
       </div>
       <div class="grid-bg" style="height:240px;position:relative;border:1px solid rgba(60,74,60,.4);border-radius:4px;overflow:hidden;">
         <svg id="chart-svg" width="100%" height="100%" preserveAspectRatio="none" style="position:absolute;inset:0;overflow:visible;"></svg>
         <div id="chart-empty" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#bbcbb8;font-size:13px;display:none;">Add trades to see your chart</div>
       </div>
+      <!-- Period breakdown table -->
+      <div id="period-table" style="display:none;margin-top:14px;max-height:220px;overflow-y:auto;"></div>
     </div>
 
     <!-- Asset Breakdown -->
@@ -441,6 +456,60 @@ function show(name) {
   return false;
 }
 
+// ── Chart period ─────────────────────────────────────────────────────
+let chartPeriod = 'all';
+
+function setPeriod(p) {
+  chartPeriod = p;
+  ['all','day','week','month'].forEach(x =>
+    document.getElementById('pb-' + x).className = 'period-btn' + (x === p ? ' on' : '')
+  );
+  const subs = { all: 'Running profit across all trades', day: 'Daily P/L with running total', week: 'Weekly P/L with running total', month: 'Monthly P/L with running total' };
+  document.getElementById('chart-subtitle').textContent = subs[p];
+  renderChart(load());
+}
+
+// ── Aggregate trades by period ────────────────────────────────────────
+function aggregateByPeriod(trades, period) {
+  const sorted = [...trades].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const map = new Map();
+
+  sorted.forEach(t => {
+    const d = new Date(t.date);
+    let key;
+    if (period === 'day') {
+      key = d.toISOString().slice(0,10);
+    } else if (period === 'week') {
+      const diff = (d.getDay() + 6) % 7;          // days since Monday
+      const mon  = new Date(+d - diff * 86400000);
+      key = mon.toISOString().slice(0,10);
+    } else {
+      key = d.toISOString().slice(0,7);            // YYYY-MM
+    }
+    if (!map.has(key)) map.set(key, { pl: 0, wins: 0, count: 0 });
+    const e = map.get(key);
+    e.pl += t.pl; e.count++;
+    if (t.pl > 0) e.wins++;
+  });
+
+  let cum = 0;
+  return [...map.entries()].map(([key, v]) => {
+    cum += v.pl;
+    let label;
+    if (period === 'day') {
+      label = new Date(key + 'T12:00:00').toLocaleDateString('en-US',{ month:'short', day:'numeric', weekday:'short' });
+    } else if (period === 'week') {
+      const s = new Date(key + 'T12:00:00');
+      const e = new Date(+s + 6*86400000);
+      label = s.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' +
+              e.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    } else {
+      label = new Date(key + '-01T12:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    }
+    return { key, label, pl: v.pl, count: v.count, wins: v.wins, cumPL: cum };
+  });
+}
+
 // ── Form mode ────────────────────────────────────────────────────────
 let formMode = 'full';
 
@@ -567,12 +636,27 @@ function renderDash() {
 
 // ── Chart ────────────────────────────────────────────────────────────
 function renderChart(trades) {
-  const svg = document.getElementById('chart-svg');
-  const emp = document.getElementById('chart-empty');
+  const svg  = document.getElementById('chart-svg');
+  const emp  = document.getElementById('chart-empty');
+  const ptbl = document.getElementById('period-table');
   svg.innerHTML = '';
-  if (!trades.length) { emp.style.display = 'flex'; return; }
+
+  if (!trades.length) {
+    emp.style.display = 'flex'; ptbl.style.display = 'none'; return;
+  }
   emp.style.display = 'none';
 
+  if (chartPeriod === 'all') {
+    ptbl.style.display = 'none';
+    drawAllChart(svg, trades);
+  } else {
+    const periods = aggregateByPeriod(trades, chartPeriod);
+    drawPeriodChart(svg, periods);
+    drawPeriodTable(ptbl, periods);
+  }
+}
+
+function drawAllChart(svg, trades) {
   const sorted = [...trades].sort((a,b) => new Date(a.date) - new Date(b.date));
   let cum = 0;
   const pts = [0, ...sorted.map(t => { cum += t.pl; return cum; })];
@@ -581,66 +665,156 @@ function renderChart(trades) {
   const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
   const minV = Math.min(0, ...pts), maxV = Math.max(0, ...pts);
   const range = maxV - minV || 1;
-  const xOf = i => pad.l + (i / (pts.length - 1)) * iW;
+  const xOf = i => pad.l + (i / (pts.length - 1 || 1)) * iW;
   const yOf = v => pad.t + iH - ((v - minV) / range) * iH;
 
-  // defs
-  const ns = 'http://www.w3.org/2000/svg';
-  const defs = el(ns, 'defs', {});
-  defs.innerHTML = `<linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
-    <stop offset="0%" stop-color="#3fe56c" stop-opacity="0.2"/>
-    <stop offset="100%" stop-color="#3fe56c" stop-opacity="0"/>
-  </linearGradient>`;
-  svg.appendChild(defs);
+  svgDefs(svg);
+  yGridLines(svg, W, H, pad, minV, maxV, range, iH);
 
-  // Y grid + labels
-  for (let i = 0; i <= 4; i++) {
-    const y   = pad.t + (iH / 4) * i;
-    const val = maxV - (range / 4) * i;
-    addEl(svg, 'line', { x1: pad.l, x2: W - pad.r, y1: y, y2: y, stroke: '#1d2023', 'stroke-width': '1' });
-    const t = el(ns, 'text', { x: pad.l - 5, y: y + 4, 'text-anchor': 'end', 'font-size': '9', fill: '#869583', 'font-family': 'JetBrains Mono' });
-    t.textContent = (val >= 0 ? '+$' : '-$') + Math.abs(val).toFixed(0);
-    svg.appendChild(t);
-  }
-
-  // Zero line
   const zy = yOf(0);
-  addEl(svg, 'line', { x1: pad.l, x2: W - pad.r, y1: zy, y2: zy, stroke: '#3c4a3c', 'stroke-width': '1', 'stroke-dasharray': '4 3' });
+  addEl(svg,'line',{x1:pad.l,x2:W-pad.r,y1:zy,y2:zy,stroke:'#3c4a3c','stroke-width':'1','stroke-dasharray':'4 3'});
 
-  // Build path
-  const d = pts.map((v, i) => (i === 0 ? 'M' : 'L') + xOf(i).toFixed(1) + ',' + yOf(v).toFixed(1)).join(' ');
-  const isPos = pts[pts.length - 1] >= 0;
+  const d = pts.map((v,i) => (i===0?'M':'L')+xOf(i).toFixed(1)+','+yOf(v).toFixed(1)).join(' ');
+  const isPos = pts[pts.length-1] >= 0;
   const color = isPos ? '#3fe56c' : '#ff525f';
 
-  // Area
-  addEl(svg, 'path', { d: d + ` L${xOf(pts.length-1).toFixed(1)},${yOf(minV).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(minV).toFixed(1)} Z`, fill: 'url(#cg)' });
+  addEl(svg,'path',{d: d+` L${xOf(pts.length-1).toFixed(1)},${yOf(minV).toFixed(1)} L${xOf(0).toFixed(1)},${yOf(minV).toFixed(1)} Z`,fill:'url(#cg)'});
+  addEl(svg,'path',{d,fill:'none',stroke:color,'stroke-width':'2','stroke-linejoin':'round'});
 
-  // Line
-  addEl(svg, 'path', { d, fill: 'none', stroke: color, 'stroke-width': '2', 'stroke-linejoin': 'round' });
-
-  // Dots for each trade
-  sorted.forEach((t, i) => {
-    const cx = xOf(i + 1), cy = yOf(pts[i + 1]);
-    addEl(svg, 'circle', { cx, cy, r: '3', fill: t.pl >= 0 ? '#3fe56c' : '#ff525f', stroke: '#0b0e11', 'stroke-width': '1.5' });
+  sorted.forEach((t,i) => {
+    addEl(svg,'circle',{cx:xOf(i+1).toFixed(1),cy:yOf(pts[i+1]).toFixed(1),r:'3',fill:t.pl>=0?'#3fe56c':'#ff525f',stroke:'#0b0e11','stroke-width':'1.5'});
   });
 
-  // Last point glow
   const lx = xOf(pts.length-1), ly = yOf(pts[pts.length-1]);
-  addEl(svg, 'circle', { cx: lx, cy: ly, r: '7', fill: color, 'fill-opacity': '0.2' });
-  addEl(svg, 'circle', { cx: lx, cy: ly, r: '3.5', fill: color, stroke: '#0b0e11', 'stroke-width': '1.5' });
+  addEl(svg,'circle',{cx:lx.toFixed(1),cy:ly.toFixed(1),r:'7',fill:color,'fill-opacity':'0.2'});
+  addEl(svg,'circle',{cx:lx.toFixed(1),cy:ly.toFixed(1),r:'3.5',fill:color,stroke:'#0b0e11','stroke-width':'1.5'});
 
-  // X labels
+  const ns   = 'http://www.w3.org/2000/svg';
   const step = Math.max(1, Math.ceil(sorted.length / 8));
-  sorted.forEach((t, i) => {
-    if (i % step !== 0 && i !== sorted.length - 1) return;
-    const lbl = el(ns, 'text', { x: xOf(i+1).toFixed(1), y: H - 5, 'text-anchor': 'middle', 'font-size': '8.5', fill: '#869583', 'font-family': 'Inter' });
-    lbl.textContent = new Date(t.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  sorted.forEach((t,i) => {
+    if (i % step !== 0 && i !== sorted.length-1) return;
+    const lbl = el(ns,'text',{x:xOf(i+1).toFixed(1),y:H-5,'text-anchor':'middle','font-size':'8.5',fill:'#869583','font-family':'Inter'});
+    lbl.textContent = new Date(t.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
     svg.appendChild(lbl);
   });
 
-  // Total label
   const sign = pts[pts.length-1] >= 0 ? '+' : '-';
   document.getElementById('chart-total').innerHTML = `<span class="${isPos?'win':'loss'}">${sign}$${Math.abs(pts[pts.length-1]).toFixed(2)}</span>`;
+}
+
+function drawPeriodChart(svg, periods) {
+  if (!periods.length) return;
+  const W = 1000, H = 240, pad = { t: 20, b: 28, l: 60, r: 12 };
+  const iW = W - pad.l - pad.r, iH = H - pad.t - pad.b;
+
+  const allVals = periods.map(p => p.cumPL);
+  const allPL   = periods.map(p => p.pl);
+  const minV = Math.min(0, ...allVals, ...allPL);
+  const maxV = Math.max(0, ...allVals, ...allPL);
+  const range = maxV - minV || 1;
+  const n    = periods.length;
+  const barW = Math.max(4, Math.min(40, (iW / n) * 0.6));
+  const slotW = iW / n;
+  const xMid  = i => pad.l + slotW * i + slotW / 2;
+  const yOf   = v => pad.t + iH - ((v - minV) / range) * iH;
+  const yZero = yOf(0);
+
+  svgDefs(svg);
+  yGridLines(svg, W, H, pad, minV, maxV, range, iH);
+  addEl(svg,'line',{x1:pad.l,x2:W-pad.r,y1:yZero,y2:yZero,stroke:'#3c4a3c','stroke-width':'1','stroke-dasharray':'4 3'});
+
+  // Bars (per-period P/L)
+  periods.forEach((p, i) => {
+    const cx = xMid(i);
+    const top    = yOf(Math.max(0, p.pl));
+    const bottom = yOf(Math.min(0, p.pl));
+    const bh     = Math.max(2, bottom - top);
+    addEl(svg,'rect',{ x:(cx - barW/2).toFixed(1), y:top.toFixed(1), width:barW.toFixed(1), height:bh.toFixed(1),
+      fill: p.pl >= 0 ? '#3fe56c' : '#ff525f',
+      'fill-opacity': '0.7', rx:'2' });
+  });
+
+  // Cumulative line over bars
+  const ns = 'http://www.w3.org/2000/svg';
+  const linePath = periods.map((p,i) => (i===0?'M':'L') + xMid(i).toFixed(1) + ',' + yOf(p.cumPL).toFixed(1)).join(' ');
+  addEl(svg,'path',{d:linePath,fill:'none',stroke:'#b4c8ff','stroke-width':'2','stroke-linejoin':'round','stroke-dasharray':'0'});
+
+  // Dots on cumulative line
+  periods.forEach((p,i) => {
+    addEl(svg,'circle',{cx:xMid(i).toFixed(1),cy:yOf(p.cumPL).toFixed(1),r:'3',fill:'#b4c8ff',stroke:'#0b0e11','stroke-width':'1.5'});
+  });
+
+  // Last dot glow
+  const last = periods[periods.length-1];
+  addEl(svg,'circle',{cx:xMid(n-1).toFixed(1),cy:yOf(last.cumPL).toFixed(1),r:'7',fill:'#b4c8ff','fill-opacity':'0.25'});
+
+  // X labels
+  const step = Math.max(1, Math.ceil(n / 8));
+  periods.forEach((p,i) => {
+    if (i % step !== 0 && i !== n-1) return;
+    const t = el(ns,'text',{x:xMid(i).toFixed(1),y:H-5,'text-anchor':'middle','font-size':'8.5',fill:'#869583','font-family':'Inter'});
+    // short label for x-axis
+    const parts = p.label.split(' ');
+    t.textContent = parts.slice(0,2).join(' ');
+    svg.appendChild(t);
+  });
+
+  const isPos = last.cumPL >= 0;
+  document.getElementById('chart-total').innerHTML =
+    `<span class="${isPos?'win':'loss'}">${isPos?'+':'-'}$${Math.abs(last.cumPL).toFixed(2)}</span>` +
+    `<span style="color:#b4c8ff;font-size:11px;margin-left:8px;">— cumulative</span>`;
+}
+
+function drawPeriodTable(el, periods) {
+  el.style.display = '';
+  const maxAbs = Math.max(...periods.map(p => Math.abs(p.pl)), 1);
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 180px 90px 70px 70px;gap:0;font-size:11px;">
+      <div class="label" style="padding:5px 0;border-bottom:1px solid #272a2e;">Period</div>
+      <div class="label" style="padding:5px 0;border-bottom:1px solid #272a2e;">P/L</div>
+      <div class="label" style="padding:5px 0;border-bottom:1px solid #272a2e;text-align:right;">Amount</div>
+      <div class="label" style="padding:5px 0;border-bottom:1px solid #272a2e;text-align:right;">Trades</div>
+      <div class="label" style="padding:5px 0;border-bottom:1px solid #272a2e;text-align:right;">Cumulative</div>
+    </div>
+    ${periods.map(p => {
+      const pos  = p.pl >= 0;
+      const bar  = (Math.abs(p.pl) / maxAbs * 100).toFixed(1);
+      const cumPos = p.cumPL >= 0;
+      return `<div style="display:grid;grid-template-columns:1fr 180px 90px 70px 70px;gap:0;padding:6px 0;border-bottom:1px solid #191c1f;align-items:center;">
+        <div style="font-size:12px;font-weight:600;">${p.label}</div>
+        <div style="padding-right:10px;">
+          <div style="height:4px;background:#323538;border-radius:2px;overflow:hidden;">
+            <div style="height:100%;background:${pos?'#3fe56c':'#ff525f'};width:${bar}%;border-radius:2px;"></div>
+          </div>
+        </div>
+        <div class="mono ${pos?'win':'loss'}" style="font-size:12px;text-align:right;">${pos?'+':'-'}$${Math.abs(p.pl).toFixed(2)}</div>
+        <div style="text-align:right;color:#bbcbb8;">${p.count} trade${p.count!==1?'s':''}</div>
+        <div class="mono ${cumPos?'win':'loss'}" style="font-size:12px;text-align:right;">${cumPos?'+':'-'}$${Math.abs(p.cumPL).toFixed(2)}</div>
+      </div>`;
+    }).join('')}`;
+}
+
+// Shared SVG helpers
+function svgDefs(svg) {
+  const ns = 'http://www.w3.org/2000/svg';
+  const d  = el(ns,'defs',{});
+  d.innerHTML = `<linearGradient id="cg" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0%" stop-color="#3fe56c" stop-opacity="0.2"/>
+    <stop offset="100%" stop-color="#3fe56c" stop-opacity="0"/>
+  </linearGradient>`;
+  svg.appendChild(d);
+}
+
+function yGridLines(svg, W, H, pad, minV, maxV, range, iH) {
+  const ns = 'http://www.w3.org/2000/svg';
+  for (let i = 0; i <= 4; i++) {
+    const y   = pad.t + (iH / 4) * i;
+    const val = maxV - (range / 4) * i;
+    addEl(svg,'line',{x1:pad.l,x2:W-pad.r,y1:y.toFixed(1),y2:y.toFixed(1),stroke:'#1d2023','stroke-width':'1'});
+    const t = el(ns,'text',{x:pad.l-5,y:(y+4).toFixed(1),'text-anchor':'end','font-size':'9',fill:'#869583','font-family':'JetBrains Mono'});
+    t.textContent = (val >= 0 ? '+$' : '-$') + Math.abs(val).toFixed(0);
+    svg.appendChild(t);
+  }
 }
 
 function el(ns, tag, attrs) {
