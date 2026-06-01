@@ -470,22 +470,33 @@ function setPeriod(p) {
 }
 
 // ── Aggregate trades by period ────────────────────────────────────────
+// Uses LOCAL date components (not UTC) so timezone shifts never move
+// a June 1 trade into May or vice-versa.
 function aggregateByPeriod(trades, period) {
   const sorted = [...trades].sort((a,b) => new Date(a.date) - new Date(b.date));
   const map = new Map();
 
   sorted.forEach(t => {
-    const d = new Date(t.date);
+    const d   = new Date(t.date);
+    const Y   = d.getFullYear();
+    const M   = String(d.getMonth() + 1).padStart(2, '0');
+    const D   = String(d.getDate()).padStart(2, '0');
     let key;
+
     if (period === 'day') {
-      key = d.toISOString().slice(0,10);
+      key = `${Y}-${M}-${D}`;
     } else if (period === 'week') {
-      const diff = (d.getDay() + 6) % 7;          // days since Monday
-      const mon  = new Date(+d - diff * 86400000);
-      key = mon.toISOString().slice(0,10);
-    } else {
-      key = d.toISOString().slice(0,7);            // YYYY-MM
+      const dow  = d.getDay();               // 0 = Sun
+      const diff = (dow + 6) % 7;            // days since Mon
+      const mon  = new Date(Y, d.getMonth(), d.getDate() - diff);
+      const wY   = mon.getFullYear();
+      const wM   = String(mon.getMonth() + 1).padStart(2, '0');
+      const wD   = String(mon.getDate()).padStart(2, '0');
+      key = `${wY}-${wM}-${wD}`;
+    } else {                                  // month
+      key = `${Y}-${M}`;
     }
+
     if (!map.has(key)) map.set(key, { pl: 0, wins: 0, count: 0 });
     const e = map.get(key);
     e.pl += t.pl; e.count++;
@@ -497,14 +508,19 @@ function aggregateByPeriod(trades, period) {
     cum += v.pl;
     let label;
     if (period === 'day') {
-      label = new Date(key + 'T12:00:00').toLocaleDateString('en-US',{ month:'short', day:'numeric', weekday:'short' });
+      const [y, m, d] = key.split('-').map(Number);
+      label = new Date(y, m - 1, d).toLocaleDateString('en-US',
+        { weekday: 'short', month: 'short', day: 'numeric' });
     } else if (period === 'week') {
-      const s = new Date(key + 'T12:00:00');
-      const e = new Date(+s + 6*86400000);
-      label = s.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' – ' +
-              e.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    } else {
-      label = new Date(key + '-01T12:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+      const [y, m, d] = key.split('-').map(Number);
+      const s = new Date(y, m - 1, d);
+      const e = new Date(y, m - 1, d + 6);
+      label = s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+              ' – ' + e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } else {                                  // month
+      const [y, m] = key.split('-').map(Number);
+      label = new Date(y, m - 1, 1).toLocaleDateString('en-US',
+        { month: 'long', year: 'numeric' });
     }
     return { key, label, pl: v.pl, count: v.count, wins: v.wins, cumPL: cum };
   });
